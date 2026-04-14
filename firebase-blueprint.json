@@ -1,0 +1,56 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a hostel resident or admin.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "room": { "type": "string" },
+        "rentPaid": { "type": "boolean" },
+        "billPaid": { "type": "boolean" },
+        "role": { "type": "string", "enum": ["admin", "user"] }
+      },
+      "required": ["name", "email", "role"]
+    },
+    "MealMenu": {
+      "title": "Meal Menu",
+      "description": "Daily food menu for the hostel.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date" },
+        "breakfast": { "type": "string" },
+        "lunch": { "type": "string" },
+        "dinner": { "type": "string" }
+      },
+      "required": ["date"]
+    },
+    "MealRecord": {
+      "title": "Meal Record",
+      "description": "A record of a meal taken by a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "type": { "type": "string", "enum": ["breakfast", "lunch", "dinner"] },
+        "cost": { "type": "number" }
+      },
+      "required": ["userId", "date", "type", "cost"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and status."
+    },
+    "/menu/{date}": {
+      "schema": "MealMenu",
+      "description": "Daily food menu."
+    },
+    "/meals/{mealId}": {
+      "schema": "MealRecord",
+      "description": "Individual meal records for billing."
+    }
+  }
+}

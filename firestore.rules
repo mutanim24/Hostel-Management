@@ -1,0 +1,91 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: users
+// Document ID: userId (UID)
+// Fields:
+//   - name: string (required)
+//   - email: string (required, email format)
+//   - room: string (optional)
+//   - rentPaid: boolean (optional)
+//   - billPaid: boolean (optional)
+//   - role: string (required, 'admin' or 'user')
+//
+// Collection: menu
+// Document ID: YYYY-MM-DD
+// Fields:
+//   - date: string (required, YYYY-MM-DD)
+//   - breakfast: string (optional)
+//   - lunch: string (optional)
+//   - dinner: string (optional)
+//
+// Collection: meals
+// Document ID: auto-generated
+// Fields:
+//   - userId: string (required, matches UID)
+//   - date: string (required, YYYY-MM-DD)
+//   - type: string (required, 'breakfast', 'lunch', 'dinner')
+//   - cost: number (required, positive)
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "mutanim24@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['name', 'email', 'role']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
+             data.role in ['admin', 'user'];
+    }
+
+    function isValidMeal(data) {
+      return data.keys().hasAll(['userId', 'date', 'type', 'cost']) &&
+             data.userId == request.auth.uid &&
+             data.date is string && data.date.matches("^\\d{4}-\\d{2}-\\d{2}$") &&
+             data.type in ['breakfast', 'lunch', 'dinner'] &&
+             data.cost is number && data.cost >= 0;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (isAdmin() || (isOwner(userId) && request.resource.data.role == resource.data.role));
+    }
+
+    match /menu/{date} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /meals/{mealId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidMeal(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+  }
+}
