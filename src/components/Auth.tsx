@@ -16,14 +16,24 @@ export function Auth({ children }: { children: (user: UserProfile) => React.Reac
       if (firebaseUser) {
         try {
           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          const isAdminEmail = firebaseUser.email === 'mutanim24@gmail.com';
+          
           if (userDoc.exists()) {
-            setUser(userDoc.data() as UserProfile);
+            const userData = userDoc.data() as UserProfile;
+            // Auto-elevate to admin if email matches
+            if (isAdminEmail && userData.role !== 'admin') {
+              const updatedUser = { ...userData, role: 'admin' as const };
+              await setDoc(doc(db, 'users', firebaseUser.uid), { role: 'admin' }, { merge: true });
+              setUser(updatedUser);
+            } else {
+              setUser(userData);
+            }
           } else {
             const newUser: UserProfile = {
               uid: firebaseUser.uid,
               name: firebaseUser.displayName || 'Anonymous',
               email: firebaseUser.email || '',
-              role: 'user',
+              role: isAdminEmail ? 'admin' : 'user',
               rentPaid: false,
               billPaid: false,
             };
