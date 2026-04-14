@@ -20,5 +20,20 @@ export interface MealRecord {
   userId: string;
   date: string;
   type: 'breakfast' | 'lunch' | 'dinner';
-  cost: number;
+  status: 'ON' | 'OFF';
+}
+
+export interface Expense {
+  id: string;
+  date: string;
+  title: string;
+  amount: number;
+}
+
+export interface Payment {
+  id: string;
+  userId: string;
+  type: 'rent' | 'meal' | 'wifi';
+  amount: number;
+  date: string;
 }

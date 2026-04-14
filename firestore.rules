@@ -60,11 +60,23 @@ service cloud.firestore {
     }
 
     function isValidMeal(data) {
-      return data.keys().hasAll(['userId', 'date', 'type', 'cost']) &&
+      return data.keys().hasAll(['userId', 'date', 'type', 'status']) &&
              data.userId == request.auth.uid &&
              data.date is string && data.date.matches("^\\d{4}-\\d{2}-\\d{2}$") &&
              data.type in ['breakfast', 'lunch', 'dinner'] &&
-             data.cost is number && data.cost >= 0;
+             data.status in ['ON', 'OFF'];
+    }
+
+    function isValidExpense(data) {
+      return data.keys().hasAll(['date', 'title', 'amount']) &&
+             data.date is string && data.date.matches("^\\d{4}-\\d{2}-\\d{2}$") &&
+             data.title is string && data.amount is number;
+    }
+
+    function isValidPayment(data) {
+      return data.keys().hasAll(['userId', 'type', 'amount', 'date']) &&
+             data.userId is string && data.type in ['rent', 'meal', 'wifi'] &&
+             data.amount is number && data.date is string;
     }
 
     // ===============================================================
@@ -72,9 +84,9 @@ service cloud.firestore {
     // ===============================================================
 
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
+      allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isAdmin());
-      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (isAdmin() || (isOwner(userId) && request.resource.data.role == resource.data.role));
+      allow update: if isAuthenticated() && (isAdmin() || (isOwner(userId) && request.resource.data.role == resource.data.role));
     }
 
     match /menu/{date} {
@@ -83,9 +95,20 @@ service cloud.firestore {
     }
 
     match /meals/{mealId} {
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isAuthenticated() && isValidMeal(request.resource.data);
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (isValidMeal(request.resource.data) || isAdmin());
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
       allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /expenses/{expenseId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /payments/{paymentId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
     }
   }
 }

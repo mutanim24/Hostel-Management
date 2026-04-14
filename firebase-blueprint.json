@@ -28,15 +28,38 @@
     },
     "MealRecord": {
       "title": "Meal Record",
-      "description": "A record of a meal taken by a user.",
+      "description": "A record of a meal status for a user.",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
         "date": { "type": "string", "format": "date" },
-        "type": { "type": "string", "enum": ["breakfast", "lunch", "dinner"] },
-        "cost": { "type": "number" }
+        "status": { "type": "string", "enum": ["ON", "OFF"] },
+        "type": { "type": "string", "enum": ["breakfast", "lunch", "dinner"] }
       },
-      "required": ["userId", "date", "type", "cost"]
+      "required": ["userId", "date", "status", "type"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "Bazar cost or other hostel expenses.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date" },
+        "title": { "type": "string" },
+        "amount": { "type": "number" }
+      },
+      "required": ["date", "title", "amount"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Payment record for a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["rent", "meal", "wifi"] },
+        "amount": { "type": "number" },
+        "date": { "type": "string", "format": "date" }
+      },
+      "required": ["userId", "type", "amount", "date"]
     }
   },
   "firestore": {
@@ -50,7 +73,15 @@
     },
     "/meals/{mealId}": {
       "schema": "MealRecord",
-      "description": "Individual meal records for billing."
+      "description": "Individual meal records."
+    },
+    "/expenses/{expenseId}": {
+      "schema": "Expense",
+      "description": "Hostel expenses."
+    },
+    "/payments/{paymentId}": {
+      "schema": "Payment",
+      "description": "User payment records."
     }
   }
 }
